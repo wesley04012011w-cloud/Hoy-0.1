@@ -12,7 +12,7 @@ const ai = new GoogleGenAI({
   }
 });
 
-async function generateContentWithRetryAndFallback(contents: any, systemInstruction: string, preferredModel?: string, thinkingEnabled?: boolean) {
+async function generateContentWithRetryAndFallback(contents: any, systemInstruction: string, preferredModel?: string, thinkingEnabled?: boolean, userApiKey?: string) {
   const modelsToTry = [
     "gemini-3.5-flash",
     "gemini-3.1-pro-preview",
@@ -22,6 +22,16 @@ async function generateContentWithRetryAndFallback(contents: any, systemInstruct
     "gemini-3-pro-image"
   ];
   
+  // Use user-provided API key if available, otherwise use environment variable
+  const client = new GoogleGenAI({ 
+    apiKey: userApiKey || process.env.GEMINI_API_KEY || "",
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      }
+    }
+  });
+
   // Put preferredModel at the top of the list if provided
   const sortedModels = preferredModel && preferredModel.length > 0
     ? [preferredModel, ...modelsToTry.filter(m => m !== preferredModel)]
@@ -47,7 +57,7 @@ async function generateContentWithRetryAndFallback(contents: any, systemInstruct
           };
         }
 
-        const response = await ai.models.generateContent({
+        const response = await client.models.generateContent({
           model,
           contents,
           config
@@ -104,7 +114,7 @@ async function startServer() {
   // API route for script generation
   app.post("/api/generate", async (req, res) => {
     try {
-      const { messages, selectedModel, thinkingEnabled } = req.body;
+      const { messages, selectedModel, thinkingEnabled, userApiKey } = req.body;
       
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: "Invalid messages format" });
@@ -147,7 +157,7 @@ the replacement lines of code (or leave empty to delete)
 
 Keep explanations and conversational text to an absolute minimum. Be direct, minimalist, and let the code speak for itself.`;
 
-      const resultText = await generateContentWithRetryAndFallback(contents, systemInstruction, selectedModel, thinkingEnabled);
+      const resultText = await generateContentWithRetryAndFallback(contents, systemInstruction, selectedModel, thinkingEnabled, userApiKey);
 
       res.json({ result: resultText });
     } catch (error: any) {

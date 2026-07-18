@@ -15,7 +15,10 @@ import {
   Edit3, 
   Save, 
   X,
-  Brain
+  Brain,
+  Settings,
+  Key,
+  ShieldCheck
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -44,6 +47,11 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState<string>('gemini-3.5-flash');
   const [thinkingEnabled, setThinkingEnabled] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Navigation
+  const [currentView, setCurrentView] = useState<'chat' | 'settings'>('chat');
+  const [userApiKey, setUserApiKey] = useState<string>(() => localStorage.getItem('gemini_api_key') || '');
+  const [tempApiKey, setTempApiKey] = useState(userApiKey);
   
   // Terminal/Code view states
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
@@ -104,6 +112,7 @@ export default function App() {
 
   const selectSession = (id: string) => {
     setCurrentSessionId(id);
+    setCurrentView('chat'); // Switch back to chat when selecting a session
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
@@ -151,7 +160,12 @@ export default function App() {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: targetMessages, selectedModel, thinkingEnabled })
+        body: JSON.stringify({ 
+          messages: targetMessages, 
+          selectedModel, 
+          thinkingEnabled,
+          userApiKey: userApiKey // Pass user provided key
+        })
       });
 
       const data = await response.json();
@@ -238,6 +252,12 @@ export default function App() {
     setIsEditingCode(false);
   };
 
+  const saveApiKey = () => {
+    localStorage.setItem('gemini_api_key', tempApiKey);
+    setUserApiKey(tempApiKey);
+    setCurrentView('chat');
+  };
+
   const stripCodeBlocks = (text: string) => {
     return text.replace(/```(?:lua|luau|[\s\S])*?```/gi, '').trim();
   };
@@ -254,6 +274,13 @@ export default function App() {
           <div className="flex items-center gap-2 text-neutral-300 font-medium">
             <TerminalSquare className="w-5 h-5 stroke-[1.5]" />
             <span className="text-sm tracking-wide">Luau Studio</span>
+            <div className="flex items-center gap-1.5 ml-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-tighter">BETA test</span>
+            </div>
           </div>
           <button 
             onClick={() => setIsSidebarOpen(false)}
@@ -297,6 +324,23 @@ export default function App() {
             </div>
           ))}
         </div>
+
+        <div className="p-3 border-t border-neutral-800 bg-neutral-900/50">
+          <button
+            onClick={() => {
+              setCurrentView('settings');
+              if (window.innerWidth < 768) setIsSidebarOpen(false);
+            }}
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors border ${
+              currentView === 'settings' 
+                ? 'bg-neutral-800 text-neutral-100 border-neutral-700' 
+                : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 border-transparent'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            Configurações
+          </button>
+        </div>
       </aside>
 
       {/* Overlay for mobile sidebar */}
@@ -309,151 +353,241 @@ export default function App() {
 
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col relative min-w-0">
-        {/* Floating Controls (Removed bulky header bar for clean UI) */}
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-          <button
-            onClick={() => setIsTerminalOpen(!isTerminalOpen)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide uppercase border backdrop-blur-md transition-all shadow-md cursor-pointer ${
-              isTerminalOpen 
-                ? 'bg-neutral-800/90 border-neutral-700/80 text-neutral-100' 
-                : 'bg-neutral-900/80 border-neutral-800/80 text-neutral-400 hover:text-neutral-200 hover:border-neutral-700/60'
-            }`}
-          >
-            <Code className="w-3.5 h-3.5" />
-            Code
-          </button>
-        </div>
+        {/* Main Content */}
+        {currentView === 'chat' ? (
+          <>
+            {/* Floating Controls */}
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              <button
+                onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide uppercase border backdrop-blur-md transition-all shadow-md cursor-pointer ${
+                  isTerminalOpen 
+                    ? 'bg-neutral-800/90 border-neutral-700/80 text-neutral-100' 
+                    : 'bg-neutral-900/80 border-neutral-800/80 text-neutral-400 hover:text-neutral-200 hover:border-neutral-700/60'
+                }`}
+              >
+                <Code className="w-3.5 h-3.5" />
+                Code
+              </button>
+            </div>
 
-        {!isSidebarOpen && (
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className="absolute top-4 left-4 z-20 p-2 bg-neutral-900/80 border border-neutral-800/80 backdrop-blur-md text-neutral-400 hover:text-neutral-200 rounded-lg transition-all shadow-md cursor-pointer"
-          >
-            <PanelLeft className="w-4 h-4" />
-          </button>
-        )}
+            {!isSidebarOpen && (
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="absolute top-4 left-4 z-20 p-2 bg-neutral-900/80 border border-neutral-800/80 backdrop-blur-md text-neutral-400 hover:text-neutral-200 rounded-lg transition-all shadow-md cursor-pointer"
+              >
+                <PanelLeft className="w-4 h-4" />
+              </button>
+            )}
 
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto px-4 pt-16 pb-32">
-          <div className="max-w-3xl mx-auto h-full">
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-neutral-500 opacity-60">
-                <TerminalSquare className="w-12 h-12 mb-4 stroke-[1.5]" />
-                <p className="text-sm font-medium tracking-wide">Descreva o que deseja criar em Luau</p>
-              </div>
-            ) : (
-              <div className="space-y-8 pb-8">
-                {messages.map((msg) => (
-                  <div 
-                    key={msg.id} 
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div 
-                      className={`max-w-[85%] ${
-                        msg.role === 'user' 
-                          ? 'bg-neutral-900 text-neutral-100 px-5 py-3 rounded-2xl rounded-tr-sm' 
-                          : 'text-neutral-300 w-full'
-                      }`}
-                    >
-                      {msg.role === 'assistant' ? (
-                        <div className="prose w-full max-w-none prose-invert">
-                          <Markdown>{stripCodeBlocks(msg.content)}</Markdown>
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap text-sm md:text-base">{msg.content}</p>
-                      )}
+            <div className="flex-1 overflow-y-auto px-4 pt-16 pb-32">
+              <div className="max-w-3xl mx-auto h-full">
+                {!userApiKey && (
+                  <div className="mb-8 p-6 bg-neutral-900 border border-neutral-800 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-top-4">
+                    <div className="p-2.5 bg-neutral-850 rounded-xl text-neutral-400">
+                      <Key className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-neutral-300 text-sm leading-relaxed mb-4">
+                        Por favor adicione uma chave em configurações, para que Hoy possa funcionar normalmente.
+                      </p>
+                      <button 
+                        onClick={() => setCurrentView('settings')}
+                        className="px-4 py-2 bg-neutral-100 text-neutral-950 text-xs font-bold rounded-lg hover:bg-white transition-colors uppercase tracking-wider"
+                      >
+                        Configurações
+                      </button>
                     </div>
                   </div>
-                ))}
-                {isGenerating && (
-                  <div className="flex justify-start">
-                    <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
+                )}
+
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-neutral-500 opacity-60">
+                    <TerminalSquare className="w-12 h-12 mb-4 stroke-[1.5]" />
+                    <p className="text-sm font-medium tracking-wide">Descreva o que deseja criar em Luau</p>
+                  </div>
+                ) : (
+                  <div className="space-y-8 pb-8">
+                    {messages.map((msg) => (
+                      <div 
+                        key={msg.id} 
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div 
+                          className={`max-w-[85%] ${
+                            msg.role === 'user' 
+                              ? 'bg-neutral-900 text-neutral-100 px-5 py-3 rounded-2xl rounded-tr-sm' 
+                              : 'text-neutral-300 w-full'
+                          }`}
+                        >
+                          {msg.role === 'assistant' ? (
+                            <div className="prose w-full max-w-none prose-invert">
+                              <Markdown>{stripCodeBlocks(msg.content)}</Markdown>
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap text-sm md:text-base">{msg.content}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {isGenerating && (
+                      <div className="flex justify-start">
+                        <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
                   </div>
                 )}
-                <div ref={messagesEndRef} />
+              </div>
+            </div>
+
+            {/* Error Notification */}
+            {error && (
+              <div className="absolute bottom-32 left-0 right-0 px-4 z-50">
+                <div className="max-w-3xl mx-auto bg-neutral-900/90 border border-red-500/30 p-4 rounded-xl flex items-start gap-3 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4">
+                  <div className="p-2 rounded-lg bg-red-500/10 shrink-0">
+                    <X className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-neutral-200 leading-relaxed font-medium">{error}</p>
+                  </div>
+                  <button onClick={() => setError(null)} className="text-neutral-500 hover:text-neutral-300">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Error Notification */}
-        {error && (
-          <div className="absolute bottom-32 left-0 right-0 px-4 z-50">
-            <div className="max-w-3xl mx-auto bg-neutral-900/90 border border-red-500/30 p-4 rounded-xl flex items-start gap-3 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4">
-              <div className="p-2 rounded-lg bg-red-500/10 shrink-0">
-                <X className="w-4 h-4 text-red-500" />
+            {/* Input Area */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent pt-10 pb-6 px-4">
+              <div className="max-w-3xl mx-auto">
+                <form 
+                  onSubmit={handleSubmit}
+                  className="relative flex flex-col bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden focus-within:border-neutral-700 transition-colors"
+                >
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ex: Crie um script de auto farm para blox fruits..."
+                    className="w-full max-h-[200px] bg-transparent text-neutral-200 placeholder:text-neutral-600 px-5 pt-4 pb-2 resize-none focus:outline-none text-sm md:text-base"
+                    rows={1}
+                  />
+                  <div className="flex items-center justify-between px-4 pb-3">
+                    <div className="flex items-center gap-3">
+                      {/* Model Selector Dropdown */}
+                      <div className="flex items-center gap-1.5 bg-neutral-950/40 px-2.5 py-1 rounded-lg border border-neutral-800/60">
+                        <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-wider">Model:</span>
+                        <select
+                          value={selectedModel}
+                          onChange={(e) => setSelectedModel(e.target.value)}
+                          className="bg-transparent text-neutral-300 text-xs font-semibold focus:outline-none cursor-pointer pr-1"
+                        >
+                          <option value="gemini-3.5-flash" className="bg-neutral-900">Gemini 3.5 Flash</option>
+                          <option value="gemini-3.1-pro-preview" className="bg-neutral-900">Gemini 3.1 Pro</option>
+                          <option value="gemini-3-flash-preview" className="bg-neutral-900">Gemini 3 Flash</option>
+                          <option value="gemini-flash-latest" className="bg-neutral-900">Gemini Latest</option>
+                          <option value="gemini-3.1-flash-lite" className="bg-neutral-900">Gemini Flash Lite</option>
+                        </select>
+                      </div>
+
+                      {/* Thinking Toggle Button */}
+                      <button
+                        type="button"
+                        onClick={() => setThinkingEnabled(!thinkingEnabled)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
+                          thinkingEnabled 
+                            ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20' 
+                            : 'bg-neutral-950/40 border-neutral-800/60 text-neutral-500 hover:text-neutral-300 hover:border-neutral-700'
+                        }`}
+                        title={thinkingEnabled ? 'Desativar modo de raciocínio (Thinking)' : 'Ativar modo de raciocínio (Thinking)'}
+                      >
+                        <Brain className={`w-3.5 h-3.5 ${thinkingEnabled ? 'animate-pulse text-emerald-400' : ''}`} />
+                        Thinking: {thinkingEnabled ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!input.trim() || isGenerating}
+                      className="p-2 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 disabled:opacity-40 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                    >
+                      <SendHorizontal className="w-4 h-4" />
+                    </button>
+                  </div>
+                </form>
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-neutral-200 leading-relaxed font-medium">{error}</p>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-4 pt-16 pb-32">
+            {!isSidebarOpen && (
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="absolute top-4 left-4 z-20 p-2 bg-neutral-900/80 border border-neutral-800/80 backdrop-blur-md text-neutral-400 hover:text-neutral-200 rounded-lg transition-all shadow-md cursor-pointer"
+              >
+                <PanelLeft className="w-4 h-4" />
+              </button>
+            )}
+            <div className="max-w-xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold text-neutral-100 mb-2">Motor da Hoy</h1>
+                <p className="text-neutral-500 text-sm">Gerencie suas chaves de API e preferências do motor de inteligência.</p>
               </div>
-              <button onClick={() => setError(null)} className="text-neutral-500 hover:text-neutral-300">
-                <X className="w-4 h-4" />
+
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest ml-1">
+                    Chave Gemini API
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Key className="w-4 h-4 text-neutral-600 group-focus-within:text-neutral-400 transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      value={tempApiKey}
+                      onChange={(e) => setTempApiKey(e.target.value)}
+                      placeholder="Adicione sua chave gmini!"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-neutral-200 placeholder:text-neutral-700 focus:outline-none focus:border-neutral-600 transition-all text-sm"
+                    />
+                  </div>
+                  <p className="text-[10px] text-neutral-600 ml-1 leading-relaxed">
+                    Sua chave é armazenada localmente no navegador e nunca é salva em nossos servidores permanentes.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={saveApiKey}
+                    className="w-full py-3 bg-neutral-100 hover:bg-white text-neutral-950 font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.98]"
+                  >
+                    <Save className="w-4 h-4" />
+                    Salvar Chaves
+                  </button>
+                  
+                  <a 
+                    href="https://aistudio.google.com/app/apikey" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="w-full py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Obter Chave API (AI Studio)
+                  </a>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setCurrentView('chat')}
+                className="mt-6 w-full py-3 text-neutral-500 hover:text-neutral-300 text-sm font-medium transition-colors"
+              >
+                Voltar para o Chat
               </button>
             </div>
           </div>
         )}
-
-        {/* Input Area */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent pt-10 pb-6 px-4">
-          <div className="max-w-3xl mx-auto">
-            <form 
-              onSubmit={handleSubmit}
-              className="relative flex flex-col bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden focus-within:border-neutral-700 transition-colors"
-            >
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ex: Crie um script de auto farm para blox fruits..."
-                className="w-full max-h-[200px] bg-transparent text-neutral-200 placeholder:text-neutral-600 px-5 pt-4 pb-2 resize-none focus:outline-none text-sm md:text-base"
-                rows={1}
-              />
-              <div className="flex items-center justify-between px-4 pb-3">
-                <div className="flex items-center gap-3">
-                  {/* Model Selector Dropdown */}
-                  <div className="flex items-center gap-1.5 bg-neutral-950/40 px-2.5 py-1 rounded-lg border border-neutral-800/60">
-                    <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-wider">Model:</span>
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      className="bg-transparent text-neutral-300 text-xs font-semibold focus:outline-none cursor-pointer pr-1"
-                    >
-                      <option value="gemini-3.5-flash" className="bg-neutral-900">Gemini 3.5 Flash</option>
-                      <option value="gemini-3.1-pro-preview" className="bg-neutral-900">Gemini 3.1 Pro</option>
-                      <option value="gemini-3-flash-preview" className="bg-neutral-900">Gemini 3 Flash</option>
-                      <option value="gemini-flash-latest" className="bg-neutral-900">Gemini Latest</option>
-                      <option value="gemini-3.1-flash-lite" className="bg-neutral-900">Gemini Flash Lite</option>
-                    </select>
-                  </div>
-
-                  {/* Thinking Toggle Button */}
-                  <button
-                    type="button"
-                    onClick={() => setThinkingEnabled(!thinkingEnabled)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
-                      thinkingEnabled 
-                        ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20' 
-                        : 'bg-neutral-950/40 border-neutral-800/60 text-neutral-500 hover:text-neutral-300 hover:border-neutral-700'
-                    }`}
-                    title={thinkingEnabled ? 'Desativar modo de raciocínio (Thinking)' : 'Ativar modo de raciocínio (Thinking)'}
-                  >
-                    <Brain className={`w-3.5 h-3.5 ${thinkingEnabled ? 'animate-pulse text-emerald-400' : ''}`} />
-                    Thinking: {thinkingEnabled ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!input.trim() || isGenerating}
-                  className="p-2 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 disabled:opacity-40 rounded-xl transition-all flex items-center justify-center cursor-pointer"
-                >
-                  <SendHorizontal className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       </main>
 
       {/* Code Terminal Panel */}
