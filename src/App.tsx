@@ -18,7 +18,8 @@ import {
   Brain,
   Settings,
   Key,
-  ShieldCheck
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -459,36 +460,36 @@ export default function App() {
             )}
 
             {/* Input Area */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent pt-10 pb-6 px-4">
-              <div className="max-w-3xl mx-auto">
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-neutral-950 via-neutral-950/80 to-transparent pt-20 pb-8 px-4 pointer-events-none">
+              <div className="max-w-3xl mx-auto pointer-events-auto">
                 <form 
                   onSubmit={handleSubmit}
-                  className="relative flex flex-col bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden focus-within:border-neutral-700 transition-colors"
+                  className="relative flex flex-col bg-black border border-neutral-800/50 rounded-2xl overflow-hidden focus-within:border-neutral-600 transition-all shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]"
                 >
                   <textarea
                     ref={textareaRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ex: Crie um script de auto farm para blox fruits..."
-                    className="w-full max-h-[200px] bg-transparent text-neutral-200 placeholder:text-neutral-600 px-5 pt-4 pb-2 resize-none focus:outline-none text-sm md:text-base"
+                    placeholder="Ask for scripting..."
+                    className="w-full max-h-[200px] bg-transparent text-neutral-200 placeholder:text-neutral-700 px-6 pt-5 pb-3 resize-none focus:outline-none text-sm md:text-base leading-relaxed"
                     rows={1}
                   />
-                  <div className="flex items-center justify-between px-4 pb-3">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between px-4 pb-4">
+                    <div className="flex items-center gap-2">
                       {/* Model Selector Dropdown */}
-                      <div className="flex items-center gap-1.5 bg-neutral-950/40 px-2.5 py-1 rounded-lg border border-neutral-800/60">
-                        <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-wider">Model:</span>
+                      <div className="flex items-center gap-1.5 bg-neutral-900/50 px-2.5 py-1.5 rounded-xl border border-neutral-800/40 hover:border-neutral-700/60 transition-colors">
+                        <Sparkles className="w-3 h-3 text-neutral-500" />
                         <select
                           value={selectedModel}
                           onChange={(e) => setSelectedModel(e.target.value)}
-                          className="bg-transparent text-neutral-300 text-xs font-semibold focus:outline-none cursor-pointer pr-1"
+                          className="bg-transparent text-neutral-400 text-[11px] font-bold focus:outline-none cursor-pointer pr-1 appearance-none"
                         >
-                          <option value="gemini-3.5-flash" className="bg-neutral-900">Gemini 3.5 Flash</option>
-                          <option value="gemini-3.1-pro-preview" className="bg-neutral-900">Gemini 3.1 Pro</option>
-                          <option value="gemini-3-flash-preview" className="bg-neutral-900">Gemini 3 Flash</option>
-                          <option value="gemini-flash-latest" className="bg-neutral-900">Gemini Latest</option>
-                          <option value="gemini-3.1-flash-lite" className="bg-neutral-900">Gemini Flash Lite</option>
+                          <option value="gemini-3.5-flash" className="bg-black">3.5 Flash</option>
+                          <option value="gemini-3.1-pro-preview" className="bg-black">3.1 Pro</option>
+                          <option value="gemini-3-flash-preview" className="bg-black">3 Flash</option>
+                          <option value="gemini-flash-latest" className="bg-black">Latest</option>
+                          <option value="gemini-3.1-flash-lite" className="bg-black">Lite</option>
                         </select>
                       </div>
 
@@ -496,22 +497,21 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setThinkingEnabled(!thinkingEnabled)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
+                        className={`p-2 rounded-xl border transition-all cursor-pointer ${
                           thinkingEnabled 
-                            ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20' 
-                            : 'bg-neutral-950/40 border-neutral-800/60 text-neutral-500 hover:text-neutral-300 hover:border-neutral-700'
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                            : 'bg-neutral-900/50 border-neutral-800/40 text-neutral-600 hover:text-neutral-400'
                         }`}
-                        title={thinkingEnabled ? 'Desativar modo de raciocínio (Thinking)' : 'Ativar modo de raciocínio (Thinking)'}
+                        title={thinkingEnabled ? 'Desativar modo de raciocínio' : 'Ativar modo de raciocínio'}
                       >
-                        <Brain className={`w-3.5 h-3.5 ${thinkingEnabled ? 'animate-pulse text-emerald-400' : ''}`} />
-                        Thinking: {thinkingEnabled ? 'ON' : 'OFF'}
+                        <Brain className={`w-3.5 h-3.5 ${thinkingEnabled ? 'animate-pulse' : ''}`} />
                       </button>
                     </div>
 
                     <button
                       type="submit"
                       disabled={!input.trim() || isGenerating}
-                      className="p-2 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 disabled:opacity-40 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                      className="p-2.5 bg-neutral-100 hover:bg-white text-neutral-950 disabled:opacity-20 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-sm active:scale-95"
                     >
                       <SendHorizontal className="w-4 h-4" />
                     </button>
