@@ -1,0 +1,6 @@
+{
+  "name": "Luau Studio AI",
+  "description": "An AI assistant to generate clean, optimized Luau scripts for Roblox Studio and executors.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

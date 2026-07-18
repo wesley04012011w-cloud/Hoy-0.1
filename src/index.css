@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-neutral-950 text-neutral-200 antialiased selection:bg-neutral-800;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-800 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-neutral-700;
+  }
+}
+
+/* Minimal Markdown styling */
+.prose {
+  @apply text-neutral-300;
+}
+.prose p {
+  @apply leading-relaxed mb-4 last:mb-0;
+}
+.prose pre {
+  @apply bg-neutral-900 rounded-md p-4 my-4 overflow-x-auto border border-neutral-800/50;
+}
+.prose code {
+  @apply font-mono text-sm;
+}
+.prose :not(pre) > code {
+  @apply bg-neutral-900 px-1.5 py-0.5 rounded text-neutral-200 border border-neutral-800/50;
+}
