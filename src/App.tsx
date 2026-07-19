@@ -175,15 +175,7 @@ export default function App() {
 
       if (userApiKey && userApiKey.trim() !== '') {
         // Direct Client-Side Gemini API Call
-        const modelMapping: { [key: string]: string } = {
-          'gemini-3.5-flash': 'gemini-2.5-flash',
-          'gemini-3.1-pro-preview': 'gemini-2.5-pro',
-          'gemini-3-flash-preview': 'gemini-2.5-flash',
-          'gemini-flash-latest': 'gemini-2.5-flash',
-          'gemini-3.1-flash-lite': 'gemini-2.5-flash',
-        };
-
-        const actualModel = modelMapping[selectedModel] || selectedModel || 'gemini-2.5-flash';
+        const actualModel = selectedModel || 'gemini-3.5-flash';
 
         const contents = targetMessages.map(msg => ({
           role: msg.role === "user" ? "user" : "model",
@@ -645,11 +637,110 @@ Pronto! O aplicativo passará a fazer conexões diretas e rápidas sem depender 
               <div className="max-w-3xl mx-auto pointer-events-auto">
                 <form 
                   onSubmit={handleSubmit}
-                  className="relative flex flex-col bg-black border-2 border-neutral-700 rounded-[32px] overflow-visible focus-within:border-neutral-500 transition-all shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]"
+                  className="relative flex items-center bg-black border-2 border-neutral-700 rounded-[24px] px-3.5 py-1.5 focus-within:border-neutral-500 transition-all shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] min-h-[48px] overflow-visible"
                 >
-                  <div className="relative">
+                  {/* Left "..." Menu Button */}
+                  <div className="relative flex items-center justify-center shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsInputMenuOpen(!isInputMenuOpen);
+                        setIsModelMenuOpen(false);
+                      }}
+                      className={`p-1.5 rounded-full transition-all border cursor-pointer ${
+                        isInputMenuOpen ? 'bg-black border-neutral-700 text-neutral-100' : 'border-transparent text-neutral-600 hover:text-neutral-400 hover:bg-black'
+                      }`}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    <AnimatePresence>
+                      {isInputMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                          className="absolute bottom-full left-0 mb-3 bg-black border border-neutral-800 rounded-2xl p-1.5 shadow-2xl min-w-[160px] z-50 backdrop-blur-xl"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setThinkingEnabled(!thinkingEnabled);
+                              setIsInputMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                              thinkingEnabled 
+                                ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' 
+                                : 'bg-black border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <Brain className={`w-4 h-4 ${thinkingEnabled ? 'animate-pulse' : ''}`} />
+                              Thinking Mode
+                            </div>
+                            <div className={`w-1.5 h-1.5 rounded-full ${thinkingEnabled ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-neutral-700'}`} />
+                          </button>
+
+                          <div className="relative group">
+                            <button
+                              type="button"
+                              onMouseEnter={() => setIsModelMenuOpen(true)}
+                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200 ${isModelMenuOpen ? 'bg-neutral-900 border-neutral-800 text-neutral-200' : 'border-transparent'}`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <Sparkles className="w-4 h-4" />
+                                Model Engine
+                              </div>
+                              <ChevronRight className="w-3 h-3 opacity-50" />
+                            </button>
+
+                            <AnimatePresence>
+                              {isModelMenuOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: -10 }}
+                                  onMouseLeave={() => setIsModelMenuOpen(false)}
+                                  className="absolute bottom-0 left-full ml-3 bg-black border border-neutral-800 rounded-2xl p-1.5 shadow-2xl min-w-[130px] backdrop-blur-xl"
+                                >
+                                  {[
+                                    { id: 'gemini-3.5-flash', label: '3.5 Flash' },
+                                    { id: 'gemini-3.1-pro-preview', label: '3.1 Pro' },
+                                    { id: 'gemini-3-flash-preview', label: '3 Flash' },
+                                    { id: 'gemini-flash-latest', label: 'Latest' },
+                                    { id: 'gemini-3.1-flash-lite', label: 'Lite' }
+                                  ].map((m) => (
+                                    <button
+                                      key={m.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedModel(m.id);
+                                        setIsModelMenuOpen(false);
+                                        setIsInputMenuOpen(false);
+                                      }}
+                                      className={`w-full text-left px-3 py-2 rounded-xl text-[11px] font-bold transition-all ${
+                                        selectedModel === m.id 
+                                          ? 'bg-neutral-800 text-neutral-100' 
+                                          : 'text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300'
+                                      }`}
+                                    >
+                                      {m.label}
+                                    </button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Input Textarea Container */}
+                  <div className="flex-1 relative mx-3 min-w-0">
                     {!input && (
-                      <div className="absolute left-14 top-[15px] pointer-events-none text-sm md:text-base leading-relaxed shimmer-text font-medium opacity-40 select-none">
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none text-sm md:text-base leading-relaxed shimmer-text font-medium opacity-40 select-none">
                         Ask for scripting...
                       </div>
                     )}
@@ -658,118 +749,20 @@ Pronto! O aplicativo passará a fazer conexões diretas e rápidas sem depender 
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      className="w-full min-h-[52px] max-h-[180px] bg-transparent text-neutral-200 placeholder:text-transparent px-14 pt-3.5 pb-3.5 resize-none focus:outline-none text-sm md:text-base leading-relaxed"
+                      className="w-full bg-transparent text-neutral-200 placeholder:text-transparent py-1.5 resize-none focus:outline-none text-sm md:text-base leading-relaxed block max-h-[180px] min-h-[32px]"
                       rows={1}
                     />
-                    
-                    {/* Left "..." Menu Button */}
-                    <div className="absolute left-2.5 top-2.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsInputMenuOpen(!isInputMenuOpen);
-                          setIsModelMenuOpen(false);
-                        }}
-                        className={`p-1.5 rounded-full transition-all border cursor-pointer ${
-                          isInputMenuOpen ? 'bg-black border-neutral-700 text-neutral-100' : 'border-transparent text-neutral-600 hover:text-neutral-400 hover:bg-black'
-                        }`}
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
+                  </div>
 
-                      {/* Dropdown Menu */}
-                      <AnimatePresence>
-                        {isInputMenuOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="absolute bottom-full left-0 mb-3 bg-black border border-neutral-800 rounded-2xl p-1.5 shadow-2xl min-w-[160px] z-50 backdrop-blur-xl"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setThinkingEnabled(!thinkingEnabled);
-                                setIsInputMenuOpen(false);
-                              }}
-                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
-                                thinkingEnabled 
-                                  ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' 
-                                  : 'bg-black border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <Brain className={`w-4 h-4 ${thinkingEnabled ? 'animate-pulse' : ''}`} />
-                                Thinking Mode
-                              </div>
-                              <div className={`w-1.5 h-1.5 rounded-full ${thinkingEnabled ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-neutral-700'}`} />
-                            </button>
-
-                            <div className="relative group">
-                              <button
-                                type="button"
-                                onMouseEnter={() => setIsModelMenuOpen(true)}
-                                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200 ${isModelMenuOpen ? 'bg-neutral-900 border-neutral-800 text-neutral-200' : 'border-transparent'}`}
-                              >
-                                <div className="flex items-center gap-2.5">
-                                  <Sparkles className="w-4 h-4" />
-                                  Model Engine
-                                </div>
-                                <ChevronRight className="w-3 h-3 opacity-50" />
-                              </button>
-
-                              <AnimatePresence>
-                                {isModelMenuOpen && (
-                                  <motion.div
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    onMouseLeave={() => setIsModelMenuOpen(false)}
-                                    className="absolute bottom-0 left-full ml-3 bg-black border border-neutral-800 rounded-2xl p-1.5 shadow-2xl min-w-[130px] backdrop-blur-xl"
-                                  >
-                                    {[
-                                      { id: 'gemini-3.5-flash', label: '3.5 Flash' },
-                                      { id: 'gemini-3.1-pro-preview', label: '3.1 Pro' },
-                                      { id: 'gemini-3-flash-preview', label: '3 Flash' },
-                                      { id: 'gemini-flash-latest', label: 'Latest' },
-                                      { id: 'gemini-3.1-flash-lite', label: 'Lite' }
-                                    ].map((m) => (
-                                      <button
-                                        key={m.id}
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedModel(m.id);
-                                          setIsModelMenuOpen(false);
-                                          setIsInputMenuOpen(false);
-                                        }}
-                                        className={`w-full text-left px-3 py-2 rounded-xl text-[11px] font-bold transition-all ${
-                                          selectedModel === m.id 
-                                            ? 'bg-neutral-800 text-neutral-100' 
-                                            : 'text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300'
-                                        }`}
-                                      >
-                                        {m.label}
-                                      </button>
-                                    ))}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
-                    {/* Right Send Button */}
-                    <div className="absolute right-2.5 top-2.5">
-                      <button
-                        type="submit"
-                        disabled={!input.trim() || isGenerating}
-                        className="p-1.5 bg-neutral-100 hover:bg-white text-neutral-950 disabled:opacity-20 rounded-full transition-all flex items-center justify-center cursor-pointer shadow-sm active:scale-95"
-                      >
-                        <SendHorizontal className="w-4 h-4" />
-                      </button>
-                    </div>
+                  {/* Right Send Button */}
+                  <div className="shrink-0">
+                    <button
+                      type="submit"
+                      disabled={!input.trim() || isGenerating}
+                      className="p-1.5 bg-neutral-100 hover:bg-white text-neutral-950 disabled:opacity-20 rounded-full transition-all flex items-center justify-center cursor-pointer shadow-sm active:scale-95"
+                    >
+                      <SendHorizontal className="w-4 h-4" />
+                    </button>
                   </div>
                 </form>
               </div>
