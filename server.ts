@@ -111,12 +111,19 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   // API route for script generation
   app.post("/api/generate", async (req, res) => {
+    console.log(`[${new Date().toISOString()}] POST /api/generate received`);
     try {
       const { messages, selectedModel, thinkingEnabled, userApiKey } = req.body;
       
       if (!messages || !Array.isArray(messages)) {
+        console.error("Invalid messages format received");
         return res.status(400).json({ error: "Invalid messages format" });
       }
 
@@ -126,38 +133,31 @@ async function startServer() {
         parts: [{ text: msg.content }]
       }));
 
-      const systemInstruction = `You are an elite Luau and Roblox Studio developer.
-Your sole purpose is to write optimized, performant, clean, and secure Luau code.
-This code will be executed in Roblox Studio (Server/Client) or through Roblox exploit executors (like Wave, Solara, Synapse, Celery, etc.).
+      const systemInstruction = `Você é Hoy 0.2 beta, um assistente de elite especializado em Luau e Roblox Studio.
 
-CRITICAL CODING GUIDELINES:
-1. Always localize services at the top of the script using 'game:GetService()' (e.g. local Players = game:GetService("Players")).
-2. Never use legacy 'wait()'. Always use 'task.wait()'.
-3. Always use local variables and functions to preserve performance and prevent global namespace pollution.
-4. When writing exploit-executor scripts:
-   - Check if custom functions exist before using them (e.g., 'if fireclickdetector then ... else ...').
-   - Use 'getgenv()' for global environment variables inside executors.
-   - Use 'hookmetamethod' or 'hookfunction' for method hooking safely.
-   - Check if objects exist with 'FindFirstChild' or 'WaitForChild' to prevent breaking errors.
-5. Provide clean, well-commented code using '--' for comments. Do not use '#' or '//'.
+SEU FLUXO OBRIGATÓRIO:
+1. Comece com uma saudação breve (MÁXIMO 1 frase). Ex: "Olá! Vou ajustar o sistema de pulo para você."
+2. NUNCA use blocos de código markdown (\`\`\`) para explicar nada ou mostrar código no chat.
+3. Se o script já existe, use o formato [SEARCH]/[EDIT]/[END] para modificar.
+4. Se for um script NOVO, use APENAS UM bloco de código Luau: \`\`\`lua ... \`\`\`.
+5. NUNCA coloque código ou os marcadores [SEARCH]/[EDIT]/[END] fora de sua função técnica. Eles NÃO devem aparecer no chat para o usuário.
+6. TODA sua resposta de chat deve ser apenas texto puro, sem formatação de código markdown (\`\`\`). Se precisar dar um exemplo, descreva-o em texto ou use o formato de edição técnica.
 
-CRITICAL INSTRUCTION FOR SCRIPT EDITS/MODIFICATIONS:
-When the user asks to edit, add, delete, or modify an existing script, you MUST use the exact search/edit/end format. This allows the editor to patch the user's code seamlessly.
-The block MUST match the syntax below:
+REGRAS DE FORMATAÇÃO:
+- [SEARCH]: Deve conter as linhas EXATAS que você quer substituir.
+- [EDIT]: Deve conter o novo código.
+- [END]: Marca o fim da edição.
 
-[SEARCH]
-exact lines of code from the existing script to be replaced (include the correct indentation and spaces)
-[EDIT]
-the replacement lines of code (or leave empty to delete)
-[END]
+REGRAS CRÍTICAS DE CÓDIGO:
+- Use 'game:GetService()' para localizar serviços.
+- Use 'task.wait()' em vez de 'wait()'.
+- Use variáveis locais.
+- Se for script de executor: use getgenv, firetouchinterest, hookmetamethod, etc.
 
-- You can provide multiple [SEARCH]/[EDIT]/[END] blocks in a single response to patch multiple sections.
-- Make sure that the [SEARCH] block matches the existing script EXACTLY.
-- If you are creating a completely new script from scratch (with no prior script or a brand new topic), just provide the full script inside a standard lua codeblock: \`\`\`lua ... \`\`\`.
-
-Keep explanations and conversational text to an absolute minimum. Be direct, minimalist, and let the code speak for itself.`;
+Mantenha o texto do chat limpo, sem fragmentos de código e focado em ser um assistente direto.`;
 
       const resultText = await generateContentWithRetryAndFallback(contents, systemInstruction, selectedModel, thinkingEnabled, userApiKey);
+      console.log(`[${new Date().toISOString()}] Content generated successfully`);
 
       res.json({ result: resultText });
     } catch (error: any) {

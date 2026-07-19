@@ -8,7 +8,7 @@
 
 @layer base {
   body {
-    @apply bg-neutral-950 text-neutral-200 antialiased selection:bg-neutral-800;
+    @apply bg-black text-neutral-200 antialiased selection:bg-neutral-800;
   }
 
   /* Custom scrollbar */
@@ -27,6 +27,30 @@
   }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    rgba(163, 163, 163, 0.2) 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(163, 163, 163, 0.2) 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shimmer 4s linear infinite;
+  animation-delay: 0.8s;
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
 /* Minimal Markdown styling */
 .prose {
   @apply text-neutral-300;
@@ -35,11 +59,11 @@
   @apply leading-relaxed mb-4 last:mb-0;
 }
 .prose pre {
-  @apply bg-neutral-900 rounded-md p-4 my-4 overflow-x-auto border border-neutral-800/50;
+  @apply bg-black rounded-md p-4 my-4 overflow-x-auto border border-neutral-800/50;
 }
 .prose code {
   @apply font-mono text-sm;
 }
 .prose :not(pre) > code {
-  @apply bg-neutral-900 px-1.5 py-0.5 rounded text-neutral-200 border border-neutral-800/50;
+  @apply bg-black px-1.5 py-0.5 rounded text-neutral-200 border border-neutral-800/50;
 }
