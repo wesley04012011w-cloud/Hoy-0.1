@@ -1,6 +1,6 @@
 {
   "name": "Hoy 0.2 beta",
   "description": "An AI assistant to generate clean, optimized Luau scripts for Roblox Studio and executors.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -128,10 +128,43 @@ async function startServer() {
       }
 
       // Format messages for the model
-      const contents = messages.map(msg => ({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.content }]
-      }));
+      const contents = messages.map(msg => {
+        let combinedText = msg.content || "";
+        
+        const textAttachments = msg.attachments?.filter((a: any) => !a.content.startsWith('data:image/')) || [];
+        const pastedContents = msg.pastedContents || [];
+        
+        if (textAttachments.length > 0 || pastedContents.length > 0) {
+          combinedText += "\n\n[Arquivos Anexados / Conteúdo Colado pelo Usuário:]";
+          textAttachments.forEach((att: any) => {
+            combinedText += `\n\n--- ARQUIVO: ${att.name} (${att.size}) ---\n${att.content}\n-----------------------------------------`;
+          });
+          pastedContents.forEach((past: any) => {
+            combinedText += `\n\n--- CONTEÚDO COLADO: ${past.title} (${past.lineCount} linhas) ---\n${past.content}\n-----------------------------------------`;
+          });
+        }
+        
+        const parts: any[] = [{ text: combinedText }];
+        
+        // Add images if present
+        const imageAttachments = msg.attachments?.filter((a: any) => a.content.startsWith('data:image/')) || [];
+        imageAttachments.forEach((att: any) => {
+          const match = att.content.match(/^data:([^;]+);base64,(.*)$/);
+          if (match) {
+            parts.push({
+              inlineData: {
+                mimeType: match[1],
+                data: match[2]
+              }
+            });
+          }
+        });
+        
+        return {
+          role: msg.role === "user" ? "user" : "model",
+          parts
+        };
+      });
 
       const systemInstruction = `Você é Hoy 0.2 beta, um assistente de elite especializado em Luau e Roblox Studio.
 
