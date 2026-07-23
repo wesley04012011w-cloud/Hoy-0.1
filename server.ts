@@ -3,15 +3,6 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
-const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
-  }
-});
-
 async function generateContentWithRetryAndFallback(contents: any, systemInstruction: string, preferredModel?: string, thinkingEnabled?: boolean, userApiKey?: string) {
   const modelsToTry = [
     "gemini-3.5-flash",
@@ -22,9 +13,13 @@ async function generateContentWithRetryAndFallback(contents: any, systemInstruct
     "gemini-3-pro-image"
   ];
   
-  // Use user-provided API key if available, otherwise use environment variable
+  if (!userApiKey || userApiKey.trim() === "") {
+    throw new Error("Chave de API requerida");
+  }
+
+  // Use user-provided API key
   const client = new GoogleGenAI({ 
-    apiKey: userApiKey || process.env.GEMINI_API_KEY || "",
+    apiKey: userApiKey,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build',

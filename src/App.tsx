@@ -69,6 +69,42 @@ export default function App() {
   const [userApiKey, setUserApiKey] = useState<string>(() => localStorage.getItem('gemini_api_key') || '');
   const [tempApiKey, setTempApiKey] = useState(userApiKey);
 
+  // PWA states
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log('beforeinstallprompt event triggered and captured');
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallPWA = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      try {
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to install: ${outcome}`);
+        if (outcome === 'accepted') {
+          setDeferredPrompt(null);
+        }
+      } catch (err) {
+        console.error('PWA prompt error:', err);
+      }
+    } else {
+      setIsPwaModalOpen(true);
+    }
+  };
+
   // Input Menu States
   const [isInputMenuOpen, setIsInputMenuOpen] = useState(false);
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
@@ -525,6 +561,10 @@ Sempre que o usuário solicitar algo relacionado a este tópico, use esta refer�
     }
 
     try {
+      if (!userApiKey || userApiKey.trim() === '') {
+        throw new Error("Chave de API requerida");
+      }
+
       let aiResultText = '';
 
       if (userApiKey && userApiKey.trim() !== '') {
@@ -762,16 +802,17 @@ Mantenha o texto do chat limpo, sem fragmentos de código e focado em ser um ass
     } catch (error: any) {
       console.error(error);
       let contentMessage = `*Erro:* ${error.message || 'Falha na conexão com o servidor.'}`;
-      if (error.message === "Aviso de Hospedagem Estática") {
-        contentMessage = `⚠️ **Aviso de Hospedagem Estática**
-Como o aplicativo está hospedado como um site estático (Vercel, Netlify, etc), o servidor backend não está ativo para processar as requisições gratuitamente.
+      if (error.message === "Chave de API requerida" || error.message === "Aviso de Hospedagem Estática" || error.message === "API_KEY_REQUIRED") {
+        contentMessage = `⚠️ **Chave de API do Gemini Requerida**
 
-**Para continuar usando Hoy 0.2 de forma 100% gratuita:**
-1. Clique no ícone de **Engrenagem** ⚙️ no canto inferior esquerdo.
-2. Insira sua própria chave Gemini API gratuita (fornecemos o link direto para você gerar sua chave do AI Studio na mesma página).
+Para proteger a cota do servidor e garantir o funcionamento gratuito para todos os usuários, a chave padrão interna foi desativada.
+
+**Para continuar usando o Hoy 0.2 de forma 100% gratuita:**
+1. Clique no ícone de **Engrenagem** ⚙️ no canto inferior esquerdo (ou abaixo do chat).
+2. Insira sua própria chave Gemini API gratuita (há um link direto nas configurações para você gerar sua chave do Google AI Studio em segundos).
 3. Clique em **Salvar Chaves**.
 
-Pronto! O aplicativo passará a fazer conexões diretas e rápidas sem depender de servidor nenhum.`;
+Pronto! O aplicativo passará a fazer conexões diretas e rápidas de forma privada, segura e ilimitada.`;
       }
       
       const errorMessage: Message = {
@@ -975,18 +1016,17 @@ Pronto! O aplicativo passará a fazer conexões diretas e rápidas sem depender 
         </div>
 
         <div className="p-3 bg-black flex flex-col gap-1.5 border-t border-neutral-900">
-          <a
-            href="https://hoy-0-1.vercel.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-between px-3 py-2 text-sm text-neutral-400 hover:text-rose-400 hover:bg-neutral-950 rounded-lg transition-all"
+          <button
+            type="button"
+            onClick={handleInstallPWA}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm text-neutral-400 hover:text-rose-400 hover:bg-neutral-950 rounded-lg transition-all text-left cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <Smartphone className="w-4 h-4 text-rose-500" />
-              <span>Download APK</span>
+              <span>Instalar PWA (APK)</span>
             </div>
             <DownloadCloud className="w-3.5 h-3.5 opacity-65" />
-          </a>
+          </button>
 
           <button
             onClick={() => {
@@ -1473,19 +1513,20 @@ Pronto! O aplicativo passará a fazer conexões diretas e rápidas sem depender 
 
                           <div className="h-px bg-neutral-800/60 my-1" />
 
-                          <a
-                            href="https://hoy-0-1.vercel.app"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => setIsInputMenuOpen(false)}
-                            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              setIsInputMenuOpen(false);
+                              handleInstallPWA(e);
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200 cursor-pointer text-left"
                           >
                             <div className="flex items-center gap-2.5">
                               <Smartphone className="w-4 h-4 text-rose-500" />
-                              Download APK
+                              Instalar PWA (APK)
                             </div>
                             <DownloadCloud className="w-3.5 h-3.5 text-neutral-600" />
-                          </a>
+                          </button>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -1950,6 +1991,65 @@ Pronto! O aplicativo passará a fazer conexões diretas e rápidas sem depender 
               <div className="flex-1 overflow-y-auto p-5 bg-black/20 font-mono text-xs text-neutral-300 leading-relaxed overflow-x-auto selection:bg-neutral-800">
                 <pre>{viewingItem.content}</pre>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL DE INSTRUÇÕES DE INSTALAÇÃO PWA (APK) */}
+      <AnimatePresence>
+        {isPwaModalOpen && (
+          <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-neutral-950 border border-neutral-800 rounded-3xl overflow-hidden w-full max-w-md shadow-2xl relative flex flex-col p-6 text-neutral-200"
+            >
+              <button
+                onClick={() => setIsPwaModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 hover:bg-neutral-900 rounded-lg text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex flex-col items-center text-center mt-2 mb-6">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-850 p-1.5 mb-4 shadow-lg">
+                  <img src="/icon.jpg" alt="Hoy Icon" className="w-full h-full object-cover rounded-xl" referrerPolicy="no-referrer" />
+                </div>
+                <h3 className="text-lg font-bold text-neutral-100">Instalar Hoy 0.2 no Celular</h3>
+                <p className="text-xs text-neutral-400 max-w-xs mt-1">
+                  Adicione o Hoy como um aplicativo móvel direto do navegador e acesse de forma instantânea sem internet!
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-neutral-900/60 border border-neutral-900 rounded-2xl">
+                  <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block mb-2">Para Android (Chrome / Firefox)</span>
+                  <ol className="list-decimal list-inside text-xs text-neutral-300 space-y-1.5 leading-relaxed">
+                    <li>Toque no ícone de <span className="font-semibold text-neutral-100">três pontos</span> no canto superior direito do navegador.</li>
+                    <li>Selecione <span className="font-semibold text-neutral-100">"Instalar aplicativo"</span> ou <span className="font-semibold text-neutral-100">"Adicionar à tela inicial"</span>.</li>
+                    <li>Confirme a instalação e o app aparecerá na tela do seu celular!</li>
+                  </ol>
+                </div>
+
+                <div className="p-4 bg-neutral-900/60 border border-neutral-900 rounded-2xl">
+                  <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block mb-2">Para iOS (Safari / iPhone)</span>
+                  <ol className="list-decimal list-inside text-xs text-neutral-300 space-y-1.5 leading-relaxed">
+                    <li>Toque no botão de <span className="font-semibold text-neutral-100">Compartilhar</span> (um quadrado com uma seta para cima na barra inferior).</li>
+                    <li>Role para baixo e selecione <span className="font-semibold text-neutral-100">"Adicionar à Tela de Início"</span>.</li>
+                    <li>Toque em <span className="font-semibold text-neutral-100">"Adicionar"</span> no canto superior direito.</li>
+                  </ol>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPwaModalOpen(false)}
+                className="mt-6 w-full py-3 bg-neutral-100 hover:bg-white text-neutral-950 text-xs font-bold rounded-xl transition-all cursor-pointer uppercase tracking-wider text-center"
+              >
+                Entendido
+              </button>
             </motion.div>
           </div>
         )}
