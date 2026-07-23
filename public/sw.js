@@ -33,12 +33,17 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests and http/https schemes (prevents chrome-extension:// failures)
+  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+    return;
+  }
+
   // Simple pass-through network-first strategy, falling back to cache if offline
   event.respondWith(
     fetch(event.request)
       .then((response) => {
         // Cache successful requests if appropriate
-        if (response && response.status === 200 && event.request.method === 'GET') {
+        if (response && response.status === 200) {
           const urlStr = event.request.url;
           if (urlStr.startsWith(self.location.origin)) {
             const responseClone = response.clone();
